@@ -114,3 +114,8 @@ func newCycleBuffer(capacity int) *cycleBuffer {
 	}
 	return cb
 }
+
+// NewCycleBuffer New CyclyBuffer
+func NewCycleBuffer(capacity int) LimitedBuffer {
+	return newCycleBuffer(capacity)
+}
