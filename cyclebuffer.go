@@ -61,12 +61,9 @@ func (c *cycleBuffer) isEmpty() bool {
 	return c.rpos == c.wpos
 }
 
-// a little trick
-// it cannot write up to rpos
-// just write up to rpos - 1
-// so cycleBuffer doesn't need a boolean property such `isFull`
+// 如果 rpos == 1 or 0, wpos == capacity，则不能写
 func (c *cycleBuffer) isFull() bool {
-	if c.rpos > 0 {
+	if c.rpos > 1 {
 		return c.wpos == c.rpos-1
 	}
 	return c.wpos == c.capacity
@@ -124,6 +121,13 @@ func (c *cycleBuffer) Read(p []byte) (n int, err error) {
 	return
 }
 
+// 写操作，最多能循环写到 rpos - 1
+//
+// 如果 rpos == 0， wpos == 0
+// 最多可以写到 capacity， 写完后 wpos == capacity
+//
+// 如果 rpos > 1, wpos >= rpos
+// 最多可以写 capacity - wpos + rpos - 1，写完后 wpos = rpos - 1
 func (c *cycleBuffer) write(p []byte) (n int, err error) {
 	if c.isFull() {
 		n = 0
