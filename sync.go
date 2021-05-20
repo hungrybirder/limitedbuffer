@@ -53,6 +53,14 @@ func (w *WithSync) Capacity() int {
 	return c
 }
 
+// Status current buffer status
+func (w *WithSync) Status() BufferStatus {
+	w.mu.Lock()
+	bs := w.lb.Status()
+	w.mu.Unlock()
+	return bs
+}
+
 // NewSyncCycleBuffer New Sync CycleBuffer
 func NewSyncCycleBuffer(capacity int) LimitedBuffer {
 	return &WithSync{
