@@ -65,11 +65,11 @@ func (c *cycleBuffer) status() BufferStatus {
 	if c.isFull() {
 		freeWriteSpace = 0
 	} else {
-		if c.rpos == 0 {
+		if c.rpos == 0 || c.rpos == 1 {
 			freeWriteSpace = capacity - c.wpos
 		} else {
 			if c.wpos == c.rpos {
-				freeWriteSpace = capacity
+				freeWriteSpace = capacity - 1
 			} else if c.wpos > c.rpos {
 				freeWriteSpace = capacity - c.wpos + c.rpos - 1
 			} else {

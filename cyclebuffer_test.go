@@ -77,3 +77,32 @@ func TestCycleBufferReadWrite(t *testing.T) {
 	assert.Equal(status.UnreadSize(), rn)
 	t.Logf("#5 %v", cb)
 }
+
+func TestCycleBufferReadWrite2(t *testing.T) {
+	assert := assert.New(t)
+	const bufSize = 8
+	var status BufferStatus
+	var err error
+	var wn int
+	// var rn int
+	cb := NewCycleBuffer(bufSize)
+	status = cb.Status()
+	assert.Equal(bufSize, status.Capacity())
+	t.Logf("NewCycleBuffer(%d), %v", bufSize, cb)
+
+	t.Logf("Before Write 3 Bytes to %v", cb)
+	cb.Write([]byte("ABC"))
+	// cb.Write([]byte("A"))
+	t.Logf("After Write 3 Bytes to %v", cb)
+
+	var r3 = makeByteSlice(3)
+	cb.Read(r3)
+	t.Logf("After read 3 byte from %v", cb)
+	status = cb.Status()
+
+	t.Logf("Try Write 8 Bytes to %v", cb)
+	wn, err = cb.Write([]byte("12345678"))
+	t.Logf("After Try Write 8 Bytes to %v", cb)
+	assert.Nil(err)
+	assert.Equal(status.FreeWriteSpace(), wn)
+}
