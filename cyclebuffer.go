@@ -2,11 +2,51 @@ package limitedbuffer
 
 import "fmt"
 
+// CycleBufferStatus cycleBuffer Status
+type CycleBufferStatus struct {
+	capacity       int
+	unreadSize     int
+	freeWriteSpace int
+
+	totalRead  int64
+	totalWrite int64
+}
+
+// Capacity 缓冲区大小
+func (cb *CycleBufferStatus) Capacity() int {
+	return cb.capacity
+}
+
+// UnreadSize 可读数据量
+func (cb *CycleBufferStatus) UnreadSize() int {
+	return cb.unreadSize
+}
+
+// FreeWriteSpace 可写数据量
+func (cb *CycleBufferStatus) FreeWriteSpace() int {
+	return cb.freeWriteSpace
+}
+
+// TotalRead 已读量
+func (cb *CycleBufferStatus) TotalRead() int64 {
+	return cb.totalRead
+}
+
+// TotalWrite 已写量
+func (cb *CycleBufferStatus) TotalWrite() int64 {
+	return cb.totalWrite
+}
+
+var _ BufferStatus = (*CycleBufferStatus)(nil)
+
 type cycleBuffer struct {
 	capacity int    // max length
 	cbuf     []byte // fixed buffer
 	rpos     int    // reader position
 	wpos     int    // writer position
+
+	totalRead  int64
+	totalWrite int64
 }
 
 func (c *cycleBuffer) status() BufferStatus {
@@ -37,10 +77,12 @@ func (c *cycleBuffer) status() BufferStatus {
 			}
 		}
 	}
-	return BufferStatus{
+	return &CycleBufferStatus{
 		capacity:       capacity,
 		unreadSize:     unreadSize,
 		freeWriteSpace: freeWriteSpace,
+		totalRead:      c.totalRead,
+		totalWrite:     c.totalWrite,
 	}
 }
 
@@ -52,9 +94,10 @@ func (c *cycleBuffer) Status() BufferStatus {
 func (c *cycleBuffer) String() string {
 	status := c.status()
 	return fmt.Sprintf(
-		"<cycleBuffer(cap=%d rpos=%d wpos=%d unread=%d freewrite=%d)> at %p",
+		"<cycleBuffer(cap=%d rpos=%d wpos=%d unread=%d freewrite=%d totalRead=%d totalWrite=%d)> at %p",
 		c.capacity, c.rpos, c.wpos,
-		status.unreadSize, status.freeWriteSpace, c)
+		status.UnreadSize(), status.FreeWriteSpace(),
+		c.totalRead, c.totalWrite, c)
 }
 
 func (c *cycleBuffer) isEmpty() bool {
@@ -113,6 +156,9 @@ func (c *cycleBuffer) read(p []byte) (n int, err error) {
 		c.rpos += n1
 	}
 	n = n1 + n2
+	if n > 0 {
+		c.totalRead += int64(n)
+	}
 	return
 }
 
@@ -153,6 +199,9 @@ func (c *cycleBuffer) write(p []byte) (n int, err error) {
 		c.wpos += n1
 	}
 	n = n1 + n2
+	if n > 0 {
+		c.totalWrite += int64(n)
+	}
 	return
 }
 
@@ -169,10 +218,12 @@ var _ LimitedBuffer = (*cycleBuffer)(nil)
 
 func newCycleBuffer(capacity int) *cycleBuffer {
 	cb := &cycleBuffer{
-		capacity: capacity,
-		cbuf:     make([]byte, capacity),
-		rpos:     0,
-		wpos:     0,
+		capacity:   capacity,
+		cbuf:       make([]byte, capacity),
+		rpos:       0,
+		wpos:       0,
+		totalRead:  0,
+		totalWrite: 0,
 	}
 	return cb
 }
